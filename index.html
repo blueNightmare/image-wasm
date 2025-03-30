@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Image Editor</title>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --sidebar-width: 280px;
+            --toolbar-height: 60px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--dark-color);
+            line-height: 1.6;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: var(--toolbar-height) 1fr;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            overflow: hidden;
+        }
+        
+        header {
+            grid-column: 1 / -1;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 10;
+        }
+        
+        .logo {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-icon {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .sidebar {
+            background-color: white;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .main-content {
+            padding: 20px;
+            overflow: auto;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tool-section {
+            margin-bottom: 25px;
+        }
+        
+        .tool-section h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+        }
+        
+        .tool-group {
+            margin-bottom: 15px;
+        }
+        
+        .tool-group h4 {
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        .btn {
+            background-color: white;
+            color: var(--dark-color);
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn:hover {
+            background-color: #f0f2f5;
+            border-color: #ccc;
+        }
+        
+        .btn i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+            border-color: var(--danger-color);
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        .image-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .image-tabs {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .image-tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .image-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .image-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+        }
+        
+        .image-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        /* 修复后的上传区域样式 */
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .upload-area.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            margin-bottom: 15px;
+            color: #666;
+        }
+        
+        .upload-text p {
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 10px;
+        }
+        
+        .file-input-label:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .history-section {
+            margin-top: auto;
+        }
+        
+        .history-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .history-item:hover {
+            background-color: #f0f2f5;
+        }
+        
+        .history-item i {
+            margin-right: 8px;
+            color: #777;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .thumbnail-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .thumbnail-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .thumbnail-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .thumbnail-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        .thumbnail-label {
+            padding: 5px;
+            text-align: center;
+            font-size: 0.8rem;
+            background-color: #f8f9fa;
+        }
+        
+        /* Font Awesome icons (using CDN) */
+        @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-camera-retro logo-icon"></i>
+            <span>Pro Image Editor</span>
+        </div>
+    </header>
+    
+    <aside class="sidebar">
+        <div class="tool-section">
+            <h3><i class="fas fa-upload"></i> 导入图片</h3>
+            <input type="file" id="fileInput" accept="image/*" class="file-input">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    <p>点击或拖放图片到此处</p>
+                    <p>支持JPG, PNG, GIF等格式</p>
+                </div>
+                <label for="fileInput" class="file-input-label">
+                    <i class="fas fa-folder-open"></i> 选择文件
+                </label>
+            </div>
+            <p id="fileName" style="font-size: 0.9rem; color: #777; text-align: center; margin-top: 10px;">未选择文件</p>
+        </div>
+        
+        <div class="tool-section">
+            <h3><i class="fas fa-sliders-h"></i> 调整</h3>
+            
+            <div class="tool-group">
+                <h4>亮度/对比度</h4>
+                <div class="slider-container">
+                    <label for="brightness">亮度</label>
+                    <input type="range" id="brightness" min="-100" max="100" value="0">
+                    <div class="value-display">
+                        <span>-100</span>
+                        <span id="brightnessValue">0</span>
+                        <span>+100</span>
+                    </div>
+                </div>
+                
+                <div class="slider-container">
+                    <label for="contrast">对比度</label>
+                    <input type="range" id="contrast" min="0" max="200" value="100" step="5">
+                    <div class="value-display">
+                        <span>0%</span>
+                        <span id="contrastValue">100%</span>
+                        <span>200%</span>
+                    </div>
+                </div>
+                
+                <button id="applyColor" class="btn btn-primary">
+                    <i class="fas fa-check"></i> 应用调整
+                </button>
+            </div>
+        </div>
+        
+        <div class="tool-section">
+            <h3><i class="fas fa-magic"></i> 滤镜</h3>
+            
+            <div class="tool-group">
+                <h4>基本滤镜</h4>
+                <button id="grayscale" class="btn">
+                    <i class="fas fa-moon"></i> 灰度化
+                </button>
+                <button id="blur" class="btn">
+                    <i class="fas fa-blur"></i> 模糊效果
+                </button>
+                <button id="sharpen" class="btn">
+                    <i class="fas fa-bolt"></i> 锐化效果
+                </button>
+                <button id="edges" class="btn">
+                    <i class="fas fa-drafting-compass"></i> 边缘检测
+                </button>
+            </div>
+        </div>
+        
+        <div class="tool-section">
+            <h3><i class="fas fa-crop-alt"></i> 变换</h3>
+            
+            <div class="tool-group">
+                <h4>旋转与翻转</h4>
+                <button id="rotate90" class="btn">
+                    <i class="fas fa-redo"></i> 旋转90°
+                </button>
+                <button id="flipH" class="btn">
+                    <i class="fas fa-arrows-alt-h"></i> 水平翻转
+                </button>
+                <button id="flipV" class="btn">
+                    <i class="fas fa-arrows-alt-v"></i> 垂直翻转
+                </button>
+            </div>
+        </div>
+        
+        <div class="tool-section">
+            <h3><i class="fas fa-file-export"></i> 导出</h3>
+            
+            <div class="tool-group">
+                <button id="savePng" class="btn btn-success">
+                    <i class="fas fa-file-image"></i> 保存为PNG
+                </button>
+                <button id="saveJpeg" class="btn btn-success">
+                    <i class="fas fa-file-image"></i> 保存为JPEG
+                </button>
+            </div>
+            
+            <div class="tool-group">
+                <h4>缩略图生成</h4>
+                <button id="generateThumbnail" class="btn">
+                    <i class="fas fa-images"></i> 生成缩略图
+                </button>
+                <div class="thumbnail-container" id="thumbnailContainer"></div>
+            </div>
+        </div>
+        
+        <div class="tool-section history-section">
+            <h3><i class="fas fa-history"></i> 历史记录</h3>
+            <div id="historyList">
+                <div class="history-item">
+                    <i class="fas fa-image"></i>
+                    <span>原始图像</span>
+                </div>
+            </div>
+            <button id="reset" class="btn btn-danger" style="margin-top: 15px;">
+                <i class="fas fa-trash-alt"></i> 重置所有更改
+            </button>
+        </div>
+    </aside>
+    
+    <main class="main-content">
+        <div class="image-area">
+            <div class="image-tabs">
+                <div class="image-tab active" data-tab="original">原始图像</div>
+                <div class="image-tab" data-tab="processed">处理后图像</div>
+            </div>
+            
+            <div class="image-container">
+                <canvas id="originalCanvas"></canvas>
+                <canvas id="processedCanvas" style="display: none;"></canvas>
+                
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>处理中...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import init, { ImageProcessor } from './pkg/image_wasm.js';
+        
+        let processor = null;
+        let historyStack = [];
+        const MAX_HISTORY = 10;
+        
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const processedCanvas = document.getElementById('processedCanvas');
+        const ctxOriginal = originalCanvas.getContext('2d');
+        const ctxProcessed = processedCanvas.getContext('2d');
+        const loadingIndicator = document.getElementById('loading');
+        const thumbnailContainer = document.getElementById('thumbnailContainer');
+        const uploadArea = document.getElementById('uploadArea');
+        const historyList = document.getElementById('historyList');
+        const tabs = document.querySelectorAll('.image-tab');
+        const canvases = {
+            original: originalCanvas,
+            processed: processedCanvas
+        };
+        
+        // 初始化WASM
+        async function initialize() {
+            await init();
+            console.log("WASM initialized");
+        }
+        initialize();
+        
+        // 显示加载状态
+        function showLoading(show) {
+            loadingIndicator.style.display = show ? 'flex' : 'none';
+        }
+        
+        // 保存当前状态到历史记录
+        function saveToHistory(action) {
+            if (!processor) return;
+            
+            const currentState = processor.to_bytes();
+            historyStack.push({
+                data: currentState,
+                action: action || '操作'
+            });
+            
+            // 限制历史记录数量
+            if (historyStack.length > MAX_HISTORY) {
+                historyStack.shift();
+            }
+            
+            updateHistoryList();
+        }
+        
+        // 更新历史记录列表
+        function updateHistoryList() {
+            historyList.innerHTML = `
+                <div class="history-item" data-index="-1">
+                    <i class="fas fa-image"></i>
+                    <span>原始图像</span>
+                </div>
+            `;
+            
+            historyStack.forEach((item, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.setAttribute('data-index', index);
+                historyItem.innerHTML = `
+                    <i class="fas fa-${getActionIcon(item.action)}"></i>
+                    <span>${item.action}</span>
+                `;
+                historyList.appendChild(historyItem);
+            });
+            
+            // 添加点击事件
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.addEventListener('click', () => loadFromHistory(item.dataset.index));
+            });
+        }
+        
+        // 根据操作获取图标
+        function getActionIcon(action) {
+            const icons = {
+                '灰度化': 'moon',
+                '旋转90°': 'redo',
+                '水平翻转': 'arrows-alt-h',
+                '垂直翻转': 'arrows-alt-v',
+                '亮度/对比度': 'sliders-h',
+                '模糊效果': 'blur',
+                '锐化效果': 'bolt',
+                '边缘检测': 'drafting-compass',
+                '操作': 'edit'
+            };
+            return icons[action] || 'edit';
+        }
+        
+        // 从历史记录加载
+        async function loadFromHistory(index) {
+            if (!processor) return;
+            
+            index = parseInt(index);
+            showLoading(true);
+            
+            try {
+                if (index === -1) {
+                    // 加载原始图像
+                    const file = fileInput.files[0];
+                    if (!file) return;
+                    
+                    const arrayBuffer = await file.arrayBuffer();
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    processor = new ImageProcessor(uint8Array);
+                    historyStack = [];
+                    updateHistoryList();
+                } else {
+                    // 加载历史状态
+                    const historyItem = historyStack[index];
+                    processor = new ImageProcessor(historyItem.data);
+                    
+                    // 截断历史记录到这一项
+                    historyStack = historyStack.slice(0, index + 1);
+                    updateHistoryList();
+                }
+                
+                displayImages();
+            } catch (err) {
+                console.error("加载历史记录失败:", err);
+                alert("加载历史记录失败: " + err);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // 加载图像
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            fileName.textContent = `已选择: ${file.name}`;
+            showLoading(true);
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                processor = new ImageProcessor(uint8Array);
+                historyStack = [];
+                updateHistoryList();
+                displayImages();
+                
+                // 清空之前的缩略图
+                thumbnailContainer.innerHTML = '';
+            } catch (err) {
+                console.error("Failed to process image:", err);
+                alert("图片处理失败: " + err);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // 拖放功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const file = e.dataTransfer.files[0];
+            if (!file || !file.type.match('image.*')) {
+                alert('请选择有效的图片文件');
+                return;
+            }
+            
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        });
+        
+        // 监听粘贴事件
+        document.addEventListener('paste', async (e) => {
+            // 检查是否有图片数据
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    if (!blob) continue;
+                    
+                    fileName.textContent = `已粘贴: 剪切板图片`;
+                    showLoading(true);
+                    
+                    try {
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        
+                        processor = new ImageProcessor(uint8Array);
+                        historyStack = [];
+                        updateHistoryList();
+                        displayImages();
+                        
+                        // 清空之前的缩略图
+                        thumbnailContainer.innerHTML = '';
+                    } catch (err) {
+                        console.error("Failed to process pasted image:", err);
+                        alert("图片处理失败: " + err);
+                    } finally {
+                        showLoading(false);
+                    }
+                    return;
+                }
+            }
+            alert("剪切板中没有检测到图片");
+        });
+        
+        // 显示图像（自适应大小）
+        function displayImages() {
+            if (!processor) return;
+            
+            const originalWidth = processor.width();
+            const originalHeight = processor.height();
+            
+            // 计算适应容器的尺寸
+            const container = document.querySelector('.image-container');
+            const availableWidth = container.clientWidth - 40;
+            const availableHeight = container.clientHeight - 40;
+            
+            // 计算保持宽高比的缩放尺寸
+            const scale = Math.min(
+                availableWidth / originalWidth,
+                availableHeight / originalHeight
+            );
+            
+            const displayWidth = Math.floor(originalWidth * scale);
+            const displayHeight = Math.floor(originalHeight * scale);
+            
+            // 设置canvas显示尺寸
+            originalCanvas.width = displayWidth;
+            originalCanvas.height = displayHeight;
+            processedCanvas.width = displayWidth;
+            processedCanvas.height = displayHeight;
+            
+            // 创建ImageBitmap以获得更好的性能
+            const originalBytes = processor.to_bytes();
+            const imageData = new ImageData(
+                new Uint8ClampedArray(originalBytes),
+                originalWidth,
+                originalHeight
+            );
+            
+            // 使用createImageBitmap提高性能
+            createImageBitmap(imageData).then(bitmap => {
+                ctxOriginal.clearRect(0, 0, displayWidth, displayHeight);
+                ctxOriginal.drawImage(bitmap, 0, 0, displayWidth, displayHeight);
+                
+                // 更新处理后图像
+                updateProcessedImage();
+            }).catch(err => {
+                console.error("Error creating ImageBitmap:", err);
+                // 回退到普通绘制方式
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = originalWidth;
+                tempCanvas.height = originalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(imageData, 0, 0);
+                
+                ctxOriginal.drawImage(
+                    tempCanvas,
+                    0, 0, originalWidth, originalHeight,
+                    0, 0, displayWidth, displayHeight
+                );
+                
+                updateProcessedImage();
+            });
+        }
+        
+        // 更新处理后的图像
+        function updateProcessedImage() {
+            if (!processor) return;
+            
+            const displayWidth = originalCanvas.width;
+            const displayHeight = originalCanvas.height;
+            const originalWidth = processor.width();
+            const originalHeight = processor.height();
+            
+            const processedBytes = processor.to_bytes();
+            const processedImageData = new ImageData(
+                new Uint8ClampedArray(processedBytes),
+                originalWidth,
+                originalHeight
+            );
+            
+            // 使用createImageBitmap提高性能
+            createImageBitmap(processedImageData).then(bitmap => {
+                ctxProcessed.clearRect(0, 0, displayWidth, displayHeight);
+                ctxProcessed.drawImage(bitmap, 0, 0, displayWidth, displayHeight);
+            }).catch(err => {
+                console.error("Error creating ImageBitmap:", err);
+                // 回退到普通绘制方式
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = originalWidth;
+                tempCanvas.height = originalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(processedImageData, 0, 0);
+                
+                ctxProcessed.drawImage(
+                    tempCanvas,
+                    0, 0, originalWidth, originalHeight,
+                    0, 0, displayWidth, displayHeight
+                );
+            });
+        }
+        
+        // 窗口大小变化时重新绘制
+        window.addEventListener('resize', () => {
+            if (processor) {
+                displayImages();
+            }
+        });
+        
+        // 标签切换
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const tabName = tab.dataset.tab;
+                originalCanvas.style.display = tabName === 'original' ? 'block' : 'none';
+                processedCanvas.style.display = tabName === 'processed' ? 'block' : 'none';
+            });
+        });
+        
+        // 绑定按钮事件
+        document.getElementById('grayscale').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.grayscale();
+            updateProcessedImage();
+            saveToHistory('灰度化');
+            showLoading(false);
+        });
+        
+        document.getElementById('rotate90').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.rotate90();
+            displayImages();
+            saveToHistory('旋转90°');
+            showLoading(false);
+        });
+        
+        document.getElementById('flipV').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.flip_vertical();
+            updateProcessedImage();
+            saveToHistory('垂直翻转');
+            showLoading(false);
+        });
+        
+        document.getElementById('flipH').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.flip_horizontal();
+            updateProcessedImage();
+            saveToHistory('水平翻转');
+            showLoading(false);
+        });
+        
+        // 颜色调整
+        document.getElementById('brightness').addEventListener('input', (e) => {
+            document.getElementById('brightnessValue').textContent = e.target.value;
+        });
+        
+        document.getElementById('contrast').addEventListener('input', (e) => {
+            document.getElementById('contrastValue').textContent = `${e.target.value}%`;
+        });
+        
+        document.getElementById('applyColor').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
+            const brightness = parseInt(document.getElementById('brightness').value);
+            const contrast = parseInt(document.getElementById('contrast').value) / 100;
+            
+            processor.adjust_brightness(brightness);
+            processor.adjust_contrast(contrast);
+            
+            updateProcessedImage();
+            saveToHistory('亮度/对比度');
+            showLoading(false);
+        });
+        
+        // 滤镜效果
+        document.getElementById('blur').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.blur(2.0);
+            updateProcessedImage();
+            saveToHistory('模糊效果');
+            showLoading(false);
+        });
+        
+        document.getElementById('sharpen').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.sharpen(2.0, 10);
+            updateProcessedImage();
+            saveToHistory('锐化效果');
+            showLoading(false);
+        });
+        
+        document.getElementById('edges').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            processor.detect_edges();
+            updateProcessedImage();
+            saveToHistory('边缘检测');
+            showLoading(false);
+        });
+        
+        // 输出选项
+        document.getElementById('savePng').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            try {
+                const pngData = await processor.to_png();
+                const blob = new Blob([pngData], { type: 'image/png' });
+                saveBlob(blob, 'processed.png');
+            } catch (e) {
+                alert(`保存失败: ${e}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        document.getElementById('saveJpeg').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            try {
+                const quality = 85;
+                const jpegData = await processor.to_jpeg(quality);
+                const blob = new Blob([jpegData], { type: 'image/jpeg' });
+                saveBlob(blob, 'processed.jpg');
+            } catch (e) {
+                alert(`保存失败: ${e}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // 重置功能
+        document.getElementById('reset').addEventListener('click', async () => {
+            if (!processor || !fileInput.files[0]) return;
+            showLoading(true);
+            
+            try {
+                // 重新加载原始文件数据
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // 创建新的处理器
+                processor = new ImageProcessor(uint8Array);
+                historyStack = [];
+                updateHistoryList();
+                displayImages();
+                
+                // 重置滑块
+                document.getElementById('brightness').value = 0;
+                document.getElementById('contrast').value = 100;
+                document.getElementById('brightnessValue').textContent = '0';
+                document.getElementById('contrastValue').textContent = '100%';
+            } catch (err) {
+                console.error("重置失败:", err);
+                alert("重置图像失败: " + err);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // 缩略图生成
+        document.getElementById('generateThumbnail').addEventListener('click', async () => {
+            if (!processor) return;
+            showLoading(true);
+            
+            try {
+                const sizes = [100, 200, 300];
+                thumbnailContainer.innerHTML = '';
+                
+                for (const size of sizes) {
+                    const thumbnailData = processor.generate_thumbnail(size, size);
+                    const blob = new Blob([thumbnailData], { type: 'image/jpeg' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const thumbnailItem = document.createElement('div');
+                    thumbnailItem.className = 'thumbnail-item';
+                    thumbnailItem.innerHTML = `
+                        <img src="${url}" alt="Thumbnail ${size}x${size}">
+                        <div class="thumbnail-label">${size}x${size}</div>
+                    `;
+                    
+                    thumbnailItem.addEventListener('click', () => {
+                        saveBlob(blob, `thumbnail-${size}x${size}.jpg`);
+                    });
+                    
+                    thumbnailContainer.appendChild(thumbnailItem);
+                }
+            } catch (e) {
+                alert(`生成缩略图失败: ${e}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+        
+        // 保存文件辅助函数
+        function saveBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+    </script>
+</body>
+</html>
